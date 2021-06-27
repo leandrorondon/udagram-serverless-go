@@ -84,6 +84,29 @@ functions:
           - kms:Decrypt
         Resource: !GetAtt KMSKey.Arn
 
+  Login:
+    handler: bin/users/login
+    events:
+      - http:
+          path: /users/auth/login
+          method: post
+          cors: true
+          request:
+            schemas:
+              application/json: ${file(requests/login-request.json)}
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:GetItem
+        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.UDAGRAM_TABLE}
+      - Effect: Allow
+        Action:
+          - secretsmanager:GetSecretValue
+        Resource: !Ref JWTSecret
+      - Effect: Allow
+        Action:
+          - kms:Decrypt
+        Resource: !GetAtt KMSKey.Arn
 
   GetFeed:
     handler: bin/feed/getFeed

@@ -19,6 +19,7 @@ import (
 
 type Service interface {
 	Create(string, string) (models.User, string, error)
+	Login(string, string) (models.User, string, error)
 }
 
 type service struct {
@@ -53,6 +54,23 @@ func (s *service) Create(email, password string) (models.User, string, error) {
 		log.Panicf("Error creating user")
 	}
 	return user, s.generateToken(email), nil
+}
+
+func (s *service) Login(email, password string) (models.User, string, error) {
+	var user models.User
+	existing, err := s.repository.Get(email)
+	if err != nil {
+		log.Panicf("Error getting user")
+	}
+	if existing == nil {
+		log.Printf("User %s doesn't exist", email)
+		return user, "", errors.New("unauthorized")
+	}
+	if !s.comparePasswords(existing.PasswordHash, password) {
+		return user, "", errors.New("unauthorized")
+	}
+
+	return *existing, s.generateToken(email), nil
 }
 
 func (s *service) hashAndSalt(password string) string {

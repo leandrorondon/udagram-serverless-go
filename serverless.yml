@@ -30,7 +30,8 @@ provider:
   environment:
     UDAGRAM_TABLE: Udagram-${self:provider.stage}
     PHOTOS_IDX: PhotosIdx
-    JWT_SECRET: jdnfksdmfksd
+    JWT_SECRET_ID: JWTSecret-${self:provider.stage}
+    JWT_SECRET_FIELD: jwtSecret
 
 # you can add statements to the Lambda function's IAM Role here
 #  iamRoleStatements:
@@ -74,6 +75,15 @@ functions:
           - dynamodb:GetItem
           - dynamodb:PutItem
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.UDAGRAM_TABLE}
+      - Effect: Allow
+        Action:
+          - secretsmanager:GetSecretValue
+        Resource: !Ref JWTSecret
+      - Effect: Allow
+        Action:
+          - kms:Decrypt
+        Resource: !GetAtt KMSKey.Arn
+
 
   GetFeed:
     handler: bin/feed/getFeed
@@ -165,3 +175,37 @@ resources:
         ResponseType: DEFAULT_4XX
         RestApiId:
           Ref: ApiGatewayRestApi
+
+    KMSKey:
+      Type: AWS::KMS::Key
+      Properties:
+        Description: KMS key to encrypt JWT secret
+        KeyPolicy:
+          Version: '2012-10-17'
+          Id: key-default-1
+          Statement:
+            - Sid: Allow administration of the key
+              Effect: Allow
+              Principal:
+                AWS:
+                  Fn::Join:
+                    - ':'
+                    - - 'arn:aws:iam:'
+                      - Ref: AWS::AccountId
+                      - 'root'
+              Action:
+                - 'kms:*'
+              Resource: '*'
+
+    KMSKeyAlias:
+      Type: AWS::KMS::Alias
+      Properties:
+        AliasName: alias/jwtKey-${self:provider.stage}
+        TargetKeyId: !Ref KMSKey
+
+    JWTSecret:
+      Type: AWS::SecretsManager::Secret
+      Properties:
+        Name: ${self:provider.environment.JWT_SECRET_ID}
+        Description: JWT Secret
+        KmsKeyId: !Ref KMSKey

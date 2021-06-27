@@ -36,10 +36,7 @@ type dynamoDBUserRepository struct {
 	Service *dynamodb.DynamoDB
 }
 
-func NewUserRepository() UserRepository {
-	sess := session.Must(session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-	}))
+func NewUserRepository(sess *session.Session) UserRepository {
 	return &dynamoDBUserRepository{
 		Service: dynamodb.New(sess),
 	}

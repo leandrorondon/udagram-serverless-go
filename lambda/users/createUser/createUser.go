@@ -4,15 +4,16 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/leandrorondon/udagram-serverless-go/models"
 	"log"
 	"net/http"
 
 	"github.com/leandrorondon/udagram-serverless-go/business/users"
 	"github.com/leandrorondon/udagram-serverless-go/datalayer"
+	"github.com/leandrorondon/udagram-serverless-go/models"
 
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/go-playground/validator"
 )
 
@@ -94,9 +95,12 @@ func (h *handler) Handler(request events.APIGatewayProxyRequest) (Response, erro
 }
 
 func main() {
-	r := datalayer.NewUserRepository()
-	h := handler{
-		service: users.NewService(r),
-	}
+	sess := session.Must(session.NewSessionWithOptions(session.Options{
+		SharedConfigState: session.SharedConfigEnable,
+	}))
+	r := datalayer.NewUserRepository(sess)
+	svc := users.NewService(r, sess)
+	h := handler{svc}
+	log.Println("Initializing createUser lambda function")
 	lambda.Start(h.Handler)
 }

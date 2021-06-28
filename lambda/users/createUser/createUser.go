@@ -99,7 +99,8 @@ func main() {
 		SharedConfigState: session.SharedConfigEnable,
 	}))
 	r := datalayer.NewUserRepository(sess)
-	svc := users.NewService(r, sess)
+	jwtSecret := datalayer.GetJwtSecret(sess)
+	svc := users.NewService(r, jwtSecret)
 	h := handler{svc}
 	log.Println("Initializing createUser lambda function")
 	lambda.Start(h.Handler)

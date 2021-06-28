@@ -13,14 +13,13 @@ type Service interface {
 
 type service struct {
 	repository datalayer.FeedRepository
-	file datalayer.FileRepository
+	file       datalayer.FileRepository
 }
-
 
 func NewService(r datalayer.FeedRepository, f datalayer.FileRepository) Service {
 	return &service{
 		repository: r,
-		file: f,
+		file:       f,
 	}
 }
 

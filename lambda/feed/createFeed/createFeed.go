@@ -7,7 +7,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/leandrorondon/udagram-serverless-go/business/users"
+	"github.com/leandrorondon/udagram-serverless-go/business/feed"
 	"github.com/leandrorondon/udagram-serverless-go/datalayer"
 	"github.com/leandrorondon/udagram-serverless-go/models"
 
@@ -23,27 +23,25 @@ import (
 // https://serverless.com/framework/docs/providers/aws/events/apigateway/#lambda-proxy-integration
 type Response events.APIGatewayProxyResponse
 
-type LoginRequest struct {
-	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required"`
+type NewFeedRequest struct {
+	Caption string `json:"caption" validate:"required"`
 }
 
-type NewUserResponse struct {
-	Token string      `json:"token"`
-	User  models.User `json:"user"`
-	Auth bool `json:"auth"`
+type NewFeedResponse struct {
+	SignedURL string      `json:"signed_url"`
+	Item      models.Feed `json:"item"`
 }
 
 type handler struct {
-	service users.Service
+	service feed.Service
 }
 
 // Handler is our lambda handler invoked by the `lambda.Start` function call
 func (h *handler) Handler(request events.APIGatewayProxyRequest) (Response, error) {
-	var req LoginRequest
+	var newItem NewFeedRequest
 
 	// Unmarshal the json, return 400 if error
-	err := json.Unmarshal([]byte(request.Body), &req)
+	err := json.Unmarshal([]byte(request.Body), &newItem)
 	if err != nil {
 		return Response{
 			Body:       err.Error(),
@@ -53,7 +51,7 @@ func (h *handler) Handler(request events.APIGatewayProxyRequest) (Response, erro
 
 	// Fields validation
 	validate := validator.New()
-	err = validate.Struct(req)
+	err = validate.Struct(newItem)
 	if err != nil {
 		return Response{
 			Body:       fmt.Sprintf("validation error:  %v", err),
@@ -61,20 +59,20 @@ func (h *handler) Handler(request events.APIGatewayProxyRequest) (Response, erro
 		}, nil
 	}
 
-	// Create user
-	user, jwt, err := h.service.Login(req.Email, req.Password)
+	// Create feed
+	// TODO: read email from JWT
+	item, signedURL, err := h.service.Create("email", newItem.Caption)
 	if err != nil {
 		return Response{
 			Body:       err.Error(),
-			StatusCode: http.StatusUnauthorized,
+			StatusCode: http.StatusBadRequest,
 		}, nil
 	}
 
 	// Build and return the response
-	response := NewUserResponse{
-		Auth: true,
-		Token: jwt,
-		User:  user,
+	response := NewFeedResponse{
+		Item: item,
+		SignedURL: signedURL,
 	}
 	var buf bytes.Buffer
 	body, err := json.Marshal(response)
@@ -100,9 +98,10 @@ func main() {
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
 	}))
-	r := datalayer.NewUserRepository(sess)
-	svc := users.NewService(r, sess)
+	r := datalayer.NewFeedRepository(sess)
+	f := datalayer.NewFileRepository(sess)
+	svc := feed.NewService(r, f)
 	h := handler{svc}
-	log.Println("Initializing login lambda function")
+	log.Println("Initializing createUser lambda function")
 	lambda.Start(h.Handler)
 }

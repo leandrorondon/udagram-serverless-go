@@ -55,7 +55,7 @@ func (h *handler) Handler(request events.APIGatewayProxyRequest) (Response, erro
 	err = validate.Struct(newUser)
 	if err != nil {
 		return Response{
-			Body:       fmt.Sprintf("validatior error:  %v", err),
+			Body:       fmt.Sprintf("validation error:  %v", err),
 			StatusCode: http.StatusBadRequest,
 		}, nil
 	}

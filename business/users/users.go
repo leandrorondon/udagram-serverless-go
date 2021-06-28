@@ -23,11 +23,12 @@ type Service interface {
 }
 
 type service struct {
-	repository  datalayer.UserRepository
-	jwtSecret []byte
+	repository datalayer.UserRepository
+	jwtSecret  []byte
 }
+
 var (
-	JwtSecretID = os.Getenv("JWT_SECRET_ID")
+	JwtSecretID    = os.Getenv("JWT_SECRET_ID")
 	JwtSecretField = os.Getenv("JWT_SECRET_FIELD")
 )
 
@@ -35,8 +36,8 @@ func NewService(r datalayer.UserRepository, sess *session.Session) Service {
 	jwtSecret := getJwtSecret(sess)
 
 	return &service{
-		repository:  r,
-		jwtSecret: jwtSecret,
+		repository: r,
+		jwtSecret:  jwtSecret,
 	}
 }
 
@@ -108,7 +109,7 @@ func (s *service) generateToken(email string) string {
 func getJwtSecret(sess *session.Session) []byte {
 	svc := secretsmanager.New(sess)
 	input := &secretsmanager.GetSecretValueInput{
-		SecretId:     aws.String(JwtSecretID),
+		SecretId: aws.String(JwtSecretID),
 	}
 	result, err := svc.GetSecretValue(input)
 	if err != nil {

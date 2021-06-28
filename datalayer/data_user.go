@@ -3,7 +3,6 @@ package datalayer
 import (
 	"fmt"
 	"log"
-	"os"
 	"time"
 
 	"github.com/leandrorondon/udagram-serverless-go/models"
@@ -12,10 +11,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
-)
-
-var (
-	TableName = os.Getenv("UDAGRAM_TABLE")
 )
 
 type UserItem struct {

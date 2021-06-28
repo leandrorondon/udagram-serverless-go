@@ -26,6 +26,7 @@ type FeedItem struct {
 
 type FeedRepository interface {
 	Create(id, email, caption, url string) (models.Feed, error)
+	ListFeed() ([]models.Feed, error)
 }
 
 type dynamoDBFeedRepository struct {
@@ -40,7 +41,7 @@ func NewFeedRepository(sess *session.Session) FeedRepository {
 
 func (r *dynamoDBFeedRepository) Create(id, email, caption, url string) (models.Feed, error) {
 	pk := fmt.Sprintf("USER#%s", email)
-	sk := fmt.Sprintf("PHOTO#%s", email)
+	sk := fmt.Sprintf("PHOTO#%s", id)
 	now := time.Now()
 	item := FeedItem{
 		PK:        pk,
@@ -77,4 +78,54 @@ func (r *dynamoDBFeedRepository) Create(id, email, caption, url string) (models.
 		CreatedAt: now,
 		UpdatedAt: now,
 	}, nil
+}
+
+func (r *dynamoDBFeedRepository) ListFeed() ([]models.Feed, error) {
+	input := &dynamodb.QueryInput{
+		TableName:              aws.String(TableName),
+		IndexName:              aws.String(PhotosIdx),
+
+		KeyConditionExpression: aws.String("#itemType = :type"),
+		ExpressionAttributeNames: map[string]*string{
+			"#itemType": aws.String("type"),
+		},
+		ExpressionAttributeValues: map[string]*dynamodb.AttributeValue{
+			":type": {
+				S: aws.String("PHOTO"),
+			},
+		},
+		ScanIndexForward: aws.Bool(false), // sort by sort key in DESC order
+	}
+
+	result, err := r.Service.Query(input)
+	if err != nil {
+		log.Printf("Got error calling Query: %v", err)
+		return nil, err
+	}
+	log.Printf("Got %d items", *result.Count)
+
+	var feedItems []FeedItem
+	if *result.Count > 0 {
+		err = dynamodbattribute.UnmarshalListOfMaps(result.Items, &feedItems)
+		if err != nil {
+			log.Printf("Got error unmarshaling items: %v", err)
+			return nil, err
+		}
+	}
+
+	return itemsToModel(feedItems), nil
+}
+
+func itemsToModel(feedItems []FeedItem) []models.Feed {
+	var feed []models.Feed
+	for _, f := range feedItems {
+		feed = append(feed, models.Feed{
+			ID: f.ID,
+			Caption: f.Caption,
+			URL: f.URL,
+			CreatedAt: f.CreatedAt,
+			UpdatedAt: f.UpdatedAt,
+		})
+	}
+	return feed
 }

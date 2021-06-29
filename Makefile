@@ -2,6 +2,8 @@
 
 build: gomodgen
 	export GO111MODULE=on
+	# Auth
+	env GOOS=linux go build -ldflags="-s -w" -o bin/auth/auth lambda/auth/auth.go
 	# Feed
 	env GOOS=linux go build -ldflags="-s -w" -o bin/feed/getFeed lambda/feed/getFeed/getFeed.go
 	env GOOS=linux go build -ldflags="-s -w" -o bin/feed/createFeed lambda/feed/createFeed/createFeed.go

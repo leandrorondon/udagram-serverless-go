@@ -11,6 +11,11 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+type CustomClaims struct {
+	Email string `json:"email"`
+	jwt.StandardClaims
+}
+
 func HashAndSalt(password string) string {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
@@ -51,11 +56,6 @@ func GetEmailFromRequest(request events.APIGatewayProxyRequest, secret []byte) (
 
 	tokenString := strings.Split(authorization, " ")[1]
 
-	type CustomClaims struct {
-		Email string `json:"email"`
-		jwt.StandardClaims
-	}
-
 	token, err := jwt.ParseWithClaims(tokenString, &CustomClaims{}, func(token *jwt.Token) (interface{}, error) {
 		return secret, nil
 	})
@@ -69,5 +69,51 @@ func GetEmailFromRequest(request events.APIGatewayProxyRequest, secret []byte) (
 	}
 
 	return claims.Email, nil
+}
 
+func GetEmailFromToken(token *jwt.Token) (string, error) {
+	claims, ok := token.Claims.(*CustomClaims)
+	if !ok {
+		return "", errors.New("invalid token")
+	}
+
+	return claims.Email, nil
+}
+
+func ParseTokenFromRequest(request events.APIGatewayCustomAuthorizerRequest, secret []byte) *jwt.Token {
+	authToken := request.AuthorizationToken
+	log.Println("authToken:", authToken)
+	tokenSlice := strings.Split(authToken, " ")
+	var tokenString string
+	if len(tokenSlice) < 2 {
+		log.Println("Could not find Authorization token")
+		return nil
+	}
+	tokenString = tokenSlice[1]
+	token, err := jwt.ParseWithClaims(tokenString, &CustomClaims{}, func(token *jwt.Token) (interface{}, error) {
+		return secret, nil
+	})
+	if err != nil {
+		log.Println("Could not parse token:", err)
+		return nil
+	}
+	return token
+}
+
+func GeneratePolicy(principalID, effect, resource string) events.APIGatewayCustomAuthorizerResponse {
+	authResponse := events.APIGatewayCustomAuthorizerResponse{PrincipalID: principalID}
+	if effect != "" && resource != "" {
+		authResponse.PolicyDocument = events.APIGatewayCustomAuthorizerPolicy{
+			Version: "2012-10-17",
+			Statement: []events.IAMPolicyStatement{
+				{
+					Action:   []string{"execute-api:Invoke"},
+					Effect:   effect,
+					Resource: []string{resource},
+				},
+			},
+		}
+	}
+	authResponse.Context = map[string]interface{}{"user": principalID}
+	return authResponse
 }

@@ -26,6 +26,18 @@ package:
     - ./bin/**
 
 functions:
+  Auth:
+    handler: bin/auth/auth
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - secretsmanager:GetSecretValue
+        Resource: !Ref JWTSecret
+      - Effect: Allow
+        Action:
+          - kms:Decrypt
+        Resource: !GetAtt KMSKey.Arn
+
   CreateUser:
     handler: bin/users/createUser
     events:
@@ -82,6 +94,7 @@ functions:
           path: /feed
           method: post
           cors: true
+          authorizer: Auth
           request:
             schemas:
               application/json: ${file(requests/create-feed-request.json)}

@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -14,6 +15,7 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-xray-sdk-go/xray"
 	"github.com/go-playground/validator"
 )
 
@@ -38,7 +40,7 @@ type handler struct {
 }
 
 // Handler is our lambda handler invoked by the `lambda.Start` function call
-func (h *handler) Handler(request events.APIGatewayProxyRequest) (Response, error) {
+func (h *handler) Handler(ctx context.Context, request events.APIGatewayProxyRequest) (Response, error) {
 	var newUser NewUserRequest
 
 	// Unmarshal the json, return 400 if error
@@ -61,7 +63,7 @@ func (h *handler) Handler(request events.APIGatewayProxyRequest) (Response, erro
 	}
 
 	// Create user
-	user, jwt, err := h.service.Create(newUser.Email, newUser.Password)
+	user, jwt, err := h.service.Create(ctx, newUser.Email, newUser.Password)
 	if err != nil {
 		return Response{
 			Body:       err.Error(),
@@ -98,8 +100,9 @@ func main() {
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
 	}))
-	r := datalayer.NewUserRepository(sess)
-	jwtSecret := datalayer.GetJwtSecret(sess)
+	xraySession := xray.AWSSession(sess)
+	r := datalayer.NewUserRepository(xraySession)
+	jwtSecret := datalayer.GetJwtSecret(xraySession)
 	svc := users.NewService(r, jwtSecret)
 	h := handler{svc}
 	log.Println("Initializing createUser lambda function")

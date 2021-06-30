@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"log"
 	"net/http"
@@ -13,6 +14,7 @@ import (
 	"github.com/aws/aws-lambda-go/events"
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-xray-sdk-go/xray"
 )
 
 // Response is of type APIGatewayProxyResponse since we're leveraging the
@@ -26,8 +28,8 @@ type handler struct {
 }
 
 // Handler is our lambda handler invoked by the `lambda.Start` function call
-func (h *handler) Handler(request events.APIGatewayProxyRequest) (Response, error) {
-	items, err := h.service.ListFeed()
+func (h *handler) Handler(ctx context.Context, request events.APIGatewayProxyRequest) (Response, error) {
+	items, err := h.service.ListFeed(ctx)
 	if err != nil {
 		return Response{
 			Body:       err.Error(),
@@ -70,8 +72,9 @@ func main() {
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
 	}))
-	r := datalayer.NewFeedRepository(sess)
-	f := datalayer.NewFileRepository(sess)
+	xraySession := xray.AWSSession(sess)
+	r := datalayer.NewFeedRepository(xraySession)
+	f := datalayer.NewFileRepository(xraySession)
 	svc := feed.NewService(r, f)
 	h := handler{
 		service:   svc,

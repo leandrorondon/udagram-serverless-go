@@ -1,6 +1,7 @@
 package feed
 
 import (
+	"context"
 	"log"
 
 	"github.com/leandrorondon/udagram-serverless-go/datalayer"
@@ -10,8 +11,8 @@ import (
 )
 
 type Service interface {
-	Create(email, caption string) (models.Feed, string, error)
-	ListFeed() ([]models.Feed, error)
+	Create(ctx context.Context, email, caption string) (models.Feed, string, error)
+	ListFeed(ctx context.Context) ([]models.Feed, error)
 }
 
 type service struct {
@@ -26,7 +27,7 @@ func NewService(r datalayer.FeedRepository, f datalayer.FileRepository) Service 
 	}
 }
 
-func (s *service) Create(email, caption string) (models.Feed, string, error) {
+func (s *service) Create(ctx context.Context, email, caption string) (models.Feed, string, error) {
 	// Create a S3 signed URL for image upload, valid for 5 minutes
 	newUUID := uuid.New().String()
 	signedURL, err := s.file.GetSignedURL(newUUID)
@@ -36,7 +37,7 @@ func (s *service) Create(email, caption string) (models.Feed, string, error) {
 
 	// Save the feed item
 	url := s.file.BuildImageURL(newUUID)
-	feed, err := s.repository.Create(newUUID, email, caption, url)
+	feed, err := s.repository.Create(ctx, newUUID, email, caption, url)
 	if err != nil {
 		log.Panic("Error creating feed")
 	}
@@ -44,9 +45,9 @@ func (s *service) Create(email, caption string) (models.Feed, string, error) {
 	return feed, signedURL, nil
 }
 
-func (s *service) ListFeed() ([]models.Feed, error) {
+func (s *service) ListFeed(ctx context.Context) ([]models.Feed, error) {
 	log.Println("ListFeed")
-	items, err := s.repository.ListFeed()
+	items, err := s.repository.ListFeed(ctx)
 	if err != nil {
 		log.Panic("Error listing feed")
 	}

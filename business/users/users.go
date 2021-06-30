@@ -1,16 +1,18 @@
 package users
 
 import (
+	"context"
 	"errors"
+	"log"
+
 	"github.com/leandrorondon/udagram-serverless-go/business/auth"
 	"github.com/leandrorondon/udagram-serverless-go/datalayer"
 	"github.com/leandrorondon/udagram-serverless-go/models"
-	"log"
 )
 
 type Service interface {
-	Create(string, string) (models.User, string, error)
-	Login(string, string) (models.User, string, error)
+	Create(ctx context.Context, email, password string) (models.User, string, error)
+	Login(ctx context.Context, email, password string) (models.User, string, error)
 }
 
 type service struct {
@@ -25,25 +27,25 @@ func NewService(r datalayer.UserRepository, secret []byte) Service {
 	}
 }
 
-func (s *service) Create(email, password string) (models.User, string, error) {
+func (s *service) Create(ctx context.Context, email, password string) (models.User, string, error) {
 	var user models.User
-	existing, err := s.repository.Get(email)
+	existing, err := s.repository.Get(ctx, email)
 	if err != nil {
 		log.Panicf("Error getting user")
 	}
 	if existing != nil {
 		return user, "", errors.New("user may already exist")
 	}
-	user, err = s.repository.Create(email, auth.HashAndSalt(password))
+	user, err = s.repository.Create(ctx, email, auth.HashAndSalt(password))
 	if err != nil {
 		log.Panicf("Error creating user")
 	}
 	return user, auth.GenerateToken(email, s.jwtSecret), nil
 }
 
-func (s *service) Login(email, password string) (models.User, string, error) {
+func (s *service) Login(ctx context.Context, email, password string) (models.User, string, error) {
 	var user models.User
-	existing, err := s.repository.Get(email)
+	existing, err := s.repository.Get(ctx, email)
 	if err != nil {
 		log.Panicf("Error getting user")
 	}

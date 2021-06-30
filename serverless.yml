@@ -2,6 +2,7 @@ service: udagram-serverless-go
 
 plugins:
   - serverless-iam-roles-per-function
+  - serverless-plugin-tracing
 
 frameworkVersion: '2'
 
@@ -11,6 +12,26 @@ provider:
   lambdaHashingVersion: 20201221
   stage: ${opt:stage, 'dev'}
   region: ${opt:region, 'us-east-1'}
+  tracing:
+    apiGateway: true
+    lambda: true
+  iam:
+    role:
+      statements:
+        - Effect: 'Allow'
+          Action:
+            - xray:GetSamplingRules
+            - xray:GetSamplingTargets
+            - xray:GetSamplingStatisticSummaries
+            - xray:BatchGetTraces
+            - xray:GetServiceGraph
+            - xray:GetTraceGraph
+            - xray:GetTraceSummaries
+            - xray:GetGroups
+            - xray:GetGroup
+            - xray:PutTraceSegments
+          Resource:
+            - '*'
 
   environment:
     UDAGRAM_TABLE: Udagram-${self:provider.stage}
@@ -20,6 +41,8 @@ provider:
     S3_BUCKET: udagram-rondondev-${self:provider.stage}
     SIGNED_URL_EXPIRATION: 300
 
+
+
 package:
   patterns:
     - '!./**'
@@ -28,6 +51,7 @@ package:
 functions:
   Auth:
     handler: bin/auth/auth
+    tracing: true
     iamRoleStatements:
       - Effect: Allow
         Action:
@@ -40,6 +64,7 @@ functions:
 
   CreateUser:
     handler: bin/users/createUser
+    tracing: true
     events:
       - http:
           path: /users/auth
@@ -65,6 +90,7 @@ functions:
 
   Login:
     handler: bin/users/login
+    tracing: true
     events:
       - http:
           path: /users/auth/login
@@ -89,6 +115,7 @@ functions:
 
   CreateFeed:
     handler: bin/feed/createFeed
+    tracing: true
     events:
       - http:
           path: /feed
@@ -110,6 +137,7 @@ functions:
 
   GetFeed:
     handler: bin/feed/getFeed
+    tracing: true
     events:
       - http:
           path: /feed

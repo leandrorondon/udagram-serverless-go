@@ -1,6 +1,7 @@
 package datalayer
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"time"
@@ -11,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
+	"github.com/aws/aws-xray-sdk-go/xray"
 )
 
 type FeedItem struct {
@@ -25,8 +27,8 @@ type FeedItem struct {
 }
 
 type FeedRepository interface {
-	Create(id, email, caption, url string) (models.Feed, error)
-	ListFeed() ([]models.Feed, error)
+	Create(ctx context.Context, id, email, caption, url string) (models.Feed, error)
+	ListFeed(ctx context.Context) ([]models.Feed, error)
 }
 
 type dynamoDBFeedRepository struct {
@@ -34,12 +36,15 @@ type dynamoDBFeedRepository struct {
 }
 
 func NewFeedRepository(sess *session.Session) FeedRepository {
+	d := dynamodb.New(sess)
+	_ = xray.Configure(xray.Config{LogLevel: "trace"})
+	xray.AWS(d.Client)
 	return &dynamoDBFeedRepository{
-		Service: dynamodb.New(sess),
+		Service: d,
 	}
 }
 
-func (r *dynamoDBFeedRepository) Create(id, email, caption, url string) (models.Feed, error) {
+func (r *dynamoDBFeedRepository) Create(ctx context.Context, id, email, caption, url string) (models.Feed, error) {
 	pk := fmt.Sprintf("USER#%s", email)
 	sk := fmt.Sprintf("PHOTO#%s", id)
 	now := time.Now()
@@ -65,7 +70,7 @@ func (r *dynamoDBFeedRepository) Create(id, email, caption, url string) (models.
 		TableName: aws.String(TableName),
 	}
 
-	_, err = r.Service.PutItem(input)
+	_, err = r.Service.PutItemWithContext(ctx, input)
 	if err != nil {
 		log.Printf("Got error calling PutItem: %v", err)
 		return models.Feed{}, err
@@ -80,7 +85,7 @@ func (r *dynamoDBFeedRepository) Create(id, email, caption, url string) (models.
 	}, nil
 }
 
-func (r *dynamoDBFeedRepository) ListFeed() ([]models.Feed, error) {
+func (r *dynamoDBFeedRepository) ListFeed(ctx context.Context) ([]models.Feed, error) {
 	input := &dynamodb.QueryInput{
 		TableName:              aws.String(TableName),
 		IndexName:              aws.String(PhotosIdx),
@@ -97,7 +102,7 @@ func (r *dynamoDBFeedRepository) ListFeed() ([]models.Feed, error) {
 		ScanIndexForward: aws.Bool(false), // sort by sort key in DESC order
 	}
 
-	result, err := r.Service.Query(input)
+	result, err := r.Service.QueryWithContext(ctx, input)
 	if err != nil {
 		log.Printf("Got error calling Query: %v", err)
 		return nil, err

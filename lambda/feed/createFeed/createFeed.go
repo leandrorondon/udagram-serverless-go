@@ -2,8 +2,10 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/aws/aws-xray-sdk-go/xray"
 	"log"
 	"net/http"
 
@@ -37,7 +39,7 @@ type handler struct {
 }
 
 // Handler is our lambda handler invoked by the `lambda.Start` function call
-func (h *handler) Handler(request events.APIGatewayProxyRequest) (Response, error) {
+func (h *handler) Handler(ctx context.Context, request events.APIGatewayProxyRequest) (Response, error) {
 	var newItem NewFeedRequest
 
 	// Unmarshal the json, return 400 if error
@@ -69,7 +71,7 @@ func (h *handler) Handler(request events.APIGatewayProxyRequest) (Response, erro
 	}
 
 	// Create feed
-	item, signedURL, err := h.service.Create(email, newItem.Caption)
+	item, signedURL, err := h.service.Create(ctx, email, newItem.Caption)
 	if err != nil {
 		return Response{
 			Body:       err.Error(),
@@ -106,8 +108,9 @@ func main() {
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
 	}))
-	r := datalayer.NewFeedRepository(sess)
-	f := datalayer.NewFileRepository(sess)
+	xraySession := xray.AWSSession(sess)
+	r := datalayer.NewFeedRepository(xraySession)
+	f := datalayer.NewFileRepository(xraySession)
 	svc := feed.NewService(r, f)
 	h := handler{
 		service:   svc,

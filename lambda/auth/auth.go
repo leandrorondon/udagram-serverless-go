@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"github.com/aws/aws-xray-sdk-go/xray"
 	"github.com/leandrorondon/udagram-serverless-go/business/auth"
 	"log"
 
@@ -39,8 +40,9 @@ func main() {
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
 	}))
+	xraySession := xray.AWSSession(sess)
 	h := handler{
-		jwtSecret: datalayer.GetJwtSecret(sess),
+		jwtSecret: datalayer.GetJwtSecret(xraySession),
 	}
 	log.Println("Initializing auth lambda function")
 	lambda.Start(h.Handler)

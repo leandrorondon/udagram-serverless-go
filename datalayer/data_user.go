@@ -1,7 +1,9 @@
 package datalayer
 
 import (
+	"context"
 	"fmt"
+	"github.com/aws/aws-xray-sdk-go/xray"
 	"log"
 	"time"
 
@@ -23,8 +25,8 @@ type UserItem struct {
 }
 
 type UserRepository interface {
-	Create(string, string) (models.User, error)
-	Get(string) (*models.User, error)
+	Create(ctx context.Context, email string, passwordHash string) (models.User, error)
+	Get(ctx context.Context, email string) (*models.User, error)
 }
 
 type dynamoDBUserRepository struct {
@@ -32,12 +34,14 @@ type dynamoDBUserRepository struct {
 }
 
 func NewUserRepository(sess *session.Session) UserRepository {
+	d := dynamodb.New(sess)
+	xray.AWS(d.Client)
 	return &dynamoDBUserRepository{
-		Service: dynamodb.New(sess),
+		Service: d,
 	}
 }
 
-func (r *dynamoDBUserRepository) Create(email string, passwordHash string) (models.User, error) {
+func (r *dynamoDBUserRepository) Create(ctx context.Context, email string, passwordHash string) (models.User, error) {
 	pk := fmt.Sprintf("USER#%s", email)
 	sk := fmt.Sprintf("METADATA#%s", email)
 	now := time.Now()
@@ -61,7 +65,7 @@ func (r *dynamoDBUserRepository) Create(email string, passwordHash string) (mode
 		TableName: aws.String(TableName),
 	}
 
-	_, err = r.Service.PutItem(input)
+	_, err = r.Service.PutItemWithContext(ctx, input)
 	if err != nil {
 		log.Printf("Got error calling PutItem: %v", err)
 		return models.User{}, err
@@ -75,11 +79,11 @@ func (r *dynamoDBUserRepository) Create(email string, passwordHash string) (mode
 	}, nil
 }
 
-func (r *dynamoDBUserRepository) Get(email string) (*models.User, error) {
+func (r *dynamoDBUserRepository) Get(ctx context.Context, email string) (*models.User, error) {
 	pk := fmt.Sprintf("USER#%s", email)
 	sk := fmt.Sprintf("METADATA#%s", email)
 
-	result, err := r.Service.GetItem(&dynamodb.GetItemInput{
+	result, err := r.Service.GetItemWithContext(ctx, &dynamodb.GetItemInput{
 		TableName: aws.String(TableName),
 		Key: map[string]*dynamodb.AttributeValue{
 			"PK": {

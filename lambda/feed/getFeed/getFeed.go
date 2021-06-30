@@ -23,7 +23,6 @@ type Response events.APIGatewayProxyResponse
 
 type handler struct {
 	service   feed.Service
-	jwtSecret []byte
 }
 
 // Handler is our lambda handler invoked by the `lambda.Start` function call
@@ -73,11 +72,9 @@ func main() {
 	}))
 	r := datalayer.NewFeedRepository(sess)
 	f := datalayer.NewFileRepository(sess)
-	jwtSecret := datalayer.GetJwtSecret(sess)
 	svc := feed.NewService(r, f)
 	h := handler{
 		service:   svc,
-		jwtSecret: jwtSecret,
 	}
 	log.Println("Initializing getFeed lambda function")
 	lambda.Start(h.Handler)

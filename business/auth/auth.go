@@ -48,29 +48,6 @@ func GenerateToken(email string, secret []byte) string {
 	return token
 }
 
-func GetEmailFromRequest(request events.APIGatewayProxyRequest, secret []byte) (string, error) {
-	authorization, ok := request.Headers["Authorization"]
-	if !ok {
-		return "", errors.New("authorization not found")
-	}
-
-	tokenString := strings.Split(authorization, " ")[1]
-
-	token, err := jwt.ParseWithClaims(tokenString, &CustomClaims{}, func(token *jwt.Token) (interface{}, error) {
-		return secret, nil
-	})
-	if err != nil {
-		return "", err
-	}
-
-	claims, ok := token.Claims.(*CustomClaims)
-	if !ok || !token.Valid {
-		return "", errors.New("invalid token")
-	}
-
-	return claims.Email, nil
-}
-
 func GetEmailFromToken(token *jwt.Token) (string, error) {
 	claims, ok := token.Claims.(*CustomClaims)
 	if !ok {

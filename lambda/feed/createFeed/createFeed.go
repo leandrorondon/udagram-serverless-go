@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/leandrorondon/udagram-serverless-go/business/auth"
 	"github.com/leandrorondon/udagram-serverless-go/business/feed"
 	"github.com/leandrorondon/udagram-serverless-go/datalayer"
 	"github.com/leandrorondon/udagram-serverless-go/models"
@@ -35,7 +34,6 @@ type NewFeedResponse struct {
 
 type handler struct {
 	service   feed.Service
-	jwtSecret []byte
 }
 
 // Handler is our lambda handler invoked by the `lambda.Start` function call
@@ -61,11 +59,11 @@ func (h *handler) Handler(request events.APIGatewayProxyRequest) (Response, erro
 		}, nil
 	}
 
-	// Get user's email from request
-	email, err := auth.GetEmailFromRequest(request, h.jwtSecret)
-	if err != nil {
+	// Get user's email from request context
+	email, ok := request.RequestContext.Authorizer["user"].(string)
+	if !ok {
 		return Response{
-			Body:       err.Error(),
+			Body:       "not authenticated",
 			StatusCode: http.StatusBadRequest,
 		}, nil
 	}
@@ -110,11 +108,9 @@ func main() {
 	}))
 	r := datalayer.NewFeedRepository(sess)
 	f := datalayer.NewFileRepository(sess)
-	jwtSecret := datalayer.GetJwtSecret(sess)
 	svc := feed.NewService(r, f)
 	h := handler{
 		service:   svc,
-		jwtSecret: jwtSecret,
 	}
 	log.Println("Initializing createFeed lambda function")
 	lambda.Start(h.Handler)

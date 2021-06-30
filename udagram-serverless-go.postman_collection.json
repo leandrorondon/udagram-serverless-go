@@ -1,0 +1,454 @@
+{
+	"info": {
+		"_postman_id": "335fc97a-0210-41cf-889f-ef339ad396bf",
+		"name": "udagram-serverless-go",
+		"description": "Requests that should work!",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Public",
+			"item": [
+				{
+					"name": "/feed",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"The count is equal to the number of items rx\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.count).to.eql(jsonData.rows.length);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{host}}/feed",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"feed"
+							]
+						},
+						"description": "Get all the items in the feed"
+					},
+					"response": []
+				},
+				{
+					"name": "/user/auth valid registration",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"A single item is returned\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.id).to.not.eql(null);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"type": "text",
+								"value": "application/json"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"email\":\"hello_new@gmail.com\",\n\t\"password\":\"fancypass\"\n}"
+						},
+						"url": {
+							"raw": "{{host}}/users/auth",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"users",
+								"auth"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "/user/auth invalid registration",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test(\"auth is false and a message is included in the error body\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.id).to.not.eql(null);",
+									"    pm.expect(jsonData.message).to.not.eql(null)",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"password\": \"fancypass\"\n}"
+						},
+						"url": {
+							"raw": "{{host}}/users/auth",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"users",
+								"auth"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "/user/auth/login valid",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 200\", function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test(\"body includes an email and token\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.auth).to.eql(true);",
+									"    pm.expect(jsonData.user).to.not.eql(null);",
+									"    pm.expect(jsonData.token).to.not.eql(null)",
+									"    ",
+									"    pm.environment.set(\"token\", jsonData.token);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n\t\"email\":\"hello_new@gmail.com\",\n\t\"password\":\"fancypass\"\n}"
+						},
+						"url": {
+							"raw": "{{host}}/users/auth/login",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"users",
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "/user/auth/login invalid",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test(\"auth is false and a message is included in the error body\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.id).to.not.eql(null);",
+									"    pm.expect(jsonData.message).to.not.eql(null)",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						},
+						"url": {
+							"raw": "{{host}}/users/auth/login",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"users",
+								"auth",
+								"login"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Unauthorized",
+			"item": [
+				{
+					"name": "/feed unauthorized",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 401\", function () {",
+									"    pm.response.to.have.status(401);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": ""
+						},
+						"url": {
+							"raw": "{{host}}/feed",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"feed"
+							]
+						},
+						"description": "Post a new item to the feed"
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Authorized",
+			"item": [
+				{
+					"name": "/feed invalid",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 400\", function () {",
+									"    pm.response.to.have.status(400);",
+									"});",
+									"",
+									"pm.test(\"body includes a message\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.message).to.not.eql(null);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{}"
+						},
+						"url": {
+							"raw": "{{host}}/feed",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"feed"
+							]
+						},
+						"description": "Post a new item to the feed"
+					},
+					"response": []
+				},
+				{
+					"name": "/feed valid",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test(\"Status code is 201\", function () {",
+									"    pm.response.to.have.status(201);",
+									"});",
+									"",
+									"pm.test(\"The post returns a new item with an id\", function () {",
+									"    var jsonData = pm.response.json();",
+									"    pm.expect(jsonData.id).to.not.eql(null);",
+									"});",
+									""
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"name": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"caption\": \"New photo\"\n}"
+						},
+						"url": {
+							"raw": "{{host}}/feed",
+							"host": [
+								"{{host}}"
+							],
+							"path": [
+								"feed"
+							]
+						},
+						"description": "Post a new item to the feed"
+					},
+					"response": []
+				}
+			],
+			"auth": {
+				"type": "bearer",
+				"bearer": [
+					{
+						"key": "token",
+						"value": "{{token}}",
+						"type": "string"
+					}
+				]
+			},
+			"event": [
+				{
+					"listen": "prerequest",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				},
+				{
+					"listen": "test",
+					"script": {
+						"type": "text/javascript",
+						"exec": [
+							""
+						]
+					}
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "host",
+			"value": ""
+		},
+		{
+			"key": "token",
+			"value": ""
+		}
+	]
+}

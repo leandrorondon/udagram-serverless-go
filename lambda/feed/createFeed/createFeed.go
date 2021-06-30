@@ -90,7 +90,7 @@ func (h *handler) Handler(request events.APIGatewayProxyRequest) (Response, erro
 	json.HTMLEscape(&buf, body)
 
 	resp := Response{
-		StatusCode:      http.StatusOK,
+		StatusCode:      http.StatusCreated,
 		IsBase64Encoded: false,
 		Body:            buf.String(),
 		Headers: map[string]string{

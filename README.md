@@ -10,3 +10,12 @@ This is a brand new Serverless version of the API using Go.
 The project is split into two parts:
 1. [The Frontend](https://github.com/leandrorondon/udagram-frontend): A basic Ionic client web application, bootstrapped from [Udacity Simple Frontend](https://github.com/udacity/cloud-developer/tree/master/course-02/exercises/udacity-c2-frontend).
 2. This Serverless API.
+
+## Serverless framework
+
+```
+# npm install -g serverless@2.72.2
+# serverless plugin install -n serverless-iam-roles-per-function
+# serverless plugin install -n serverless-plugin-tracing"
+
+```
